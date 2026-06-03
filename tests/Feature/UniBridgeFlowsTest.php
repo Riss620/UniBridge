@@ -33,12 +33,37 @@ class UniBridgeFlowsTest extends TestCase
     {
         Mail::fake();
 
+        $univUser = User::create([
+            'name'              => 'Univ Admin',
+            'email'             => 'univ@example.com',
+            'password'          => Hash::make('Secret@123'),
+            'role'              => 'university',
+            'email_verified_at' => now(),
+        ]);
+
+        $university = University::create([
+            'user_id'        => $univUser->id,
+            'name'           => 'Delhi University',
+            'address'        => 'Delhi',
+            'city'           => 'Delhi',
+            'state'          => 'Delhi',
+            'affiliation_no' => 'DU-999',
+            'contact_phone'  => '9999999999',
+            'status'         => 'approved',
+        ]);
+
         $response = $this->post(route('register'), [
             'name'                  => 'John Doe',
             'email'                 => 'john@example.com',
             'password'              => 'Password@123',
             'password_confirmation' => 'Password@123',
             'role'                  => 'student',
+            'university_id'         => $university->id,
+            'roll_no'               => 'ROLL999',
+            'course'                => 'B.Tech',
+            'department'            => 'Computer Science',
+            'year'                  => 1,
+            'admission_year'        => 2024,
         ]);
 
         $response->assertRedirect(route('otp.verify'));
@@ -46,6 +71,13 @@ class UniBridgeFlowsTest extends TestCase
             'name'  => 'John Doe',
             'email' => 'john@example.com',
             'role'  => 'student',
+        ]);
+
+        $this->assertDatabaseHas('students', [
+            'university_id' => $university->id,
+            'name'          => 'John Doe',
+            'email'         => 'john@example.com',
+            'status'        => 'pending',
         ]);
 
         $user = User::where('email', 'john@example.com')->first();
@@ -120,6 +152,37 @@ class UniBridgeFlowsTest extends TestCase
             'department'  => 'Department of Higher Education',
             'designation' => 'Under Secretary',
         ]);
+    }
+
+    /**
+     * 4.5 Admin Registration
+     */
+    public function test_admin_registration_creates_user_and_sends_otp(): void
+    {
+        Mail::fake();
+
+        $response = $this->post(route('register'), [
+            'name'                  => 'John Admin',
+            'email'                 => 'john_admin@example.com',
+            'password'              => 'Password@123',
+            'password_confirmation' => 'Password@123',
+            'role'                  => 'admin',
+        ]);
+
+        $response->assertRedirect(route('otp.verify'));
+        $this->assertDatabaseHas('users', [
+            'name'  => 'John Admin',
+            'email' => 'john_admin@example.com',
+            'role'  => 'admin',
+        ]);
+
+        $user = User::where('email', 'john_admin@example.com')->first();
+        $this->assertNotNull($user->otp);
+        $this->assertNotNull($user->otp_expires_at);
+
+        Mail::assertSent(SendOtpMail::class, function ($mail) use ($user) {
+            return $mail->hasTo('john_admin@example.com') && $mail->otp === $user->otp;
+        });
     }
 
     /**
@@ -301,7 +364,7 @@ class UniBridgeFlowsTest extends TestCase
             'state'          => 'Delhi',
             'affiliation_no' => 'DU-999',
             'contact_phone'  => '9999999999',
-            'status'         => 'pending',
+            'status'         => 'approved',
         ]);
 
         $student = Student::create([
@@ -328,18 +391,6 @@ class UniBridgeFlowsTest extends TestCase
         $response = $this->get(route('admin.universities', ['status' => 'pending']));
         $response->assertStatus(200);
 
-        // Reject university
-        $response = $this->post(route('admin.universities.reject', $university), ['reason' => 'Invalid docs']);
-        $response->assertStatus(302);
-        $this->assertEquals('rejected', $university->fresh()->status);
-        $this->assertEquals('Invalid docs', $university->fresh()->rejection_reason);
-
-        // Approve university
-        $response = $this->post(route('admin.universities.approve', $university));
-        $response->assertStatus(302);
-        $this->assertEquals('approved', $university->fresh()->status);
-        $this->assertNull($university->fresh()->rejection_reason);
-
         // Search students
         $response = $this->get(route('admin.students', ['search' => 'Alice']));
         $response->assertStatus(200);
@@ -355,6 +406,26 @@ class UniBridgeFlowsTest extends TestCase
 
         $response = $this->post(route('admin.users.toggle', $univUser));
         $this->assertTrue($univUser->fresh()->is_active);
+
+        // Admin Create User - Government
+        $response = $this->post(route('admin.users.store'), [
+            'name'        => 'Admin Created Govt',
+            'email'       => 'ac_govt@gov.in',
+            'password'    => 'Secret@123',
+            'role'        => 'government',
+            'department'  => 'HRD',
+            'designation' => 'Director',
+        ]);
+        $response->assertRedirect(route('admin.users'));
+        $this->assertDatabaseHas('users', ['email' => 'ac_govt@gov.in']);
+        $this->assertDatabaseHas('government_users', ['department' => 'HRD']);
+
+        // Admin Delete User
+        $userToDelete = User::where('email', 'ac_govt@gov.in')->first();
+        $response = $this->delete(route('admin.users.delete', $userToDelete));
+        $response->assertStatus(302);
+        $this->assertDatabaseMissing('users', ['email' => 'ac_govt@gov.in']);
+        $this->assertDatabaseMissing('government_users', ['department' => 'HRD']);
     }
 
     /**
@@ -413,7 +484,7 @@ class UniBridgeFlowsTest extends TestCase
             'department'     => 'Management',
             'year'           => 1,
             'cgpa'           => 8.5,
-            'status'         => 'active',
+            'status'         => 'pending',
             'admission_year' => 2024,
         ]);
         $response->assertRedirect(route('university.students'));
@@ -421,9 +492,15 @@ class UniBridgeFlowsTest extends TestCase
             'university_id' => $university->id,
             'name'          => 'Bob Vance',
             'roll_no'       => 'BOB2024',
+            'status'        => 'pending',
         ]);
 
         $student = Student::where('roll_no', 'BOB2024')->first();
+
+        // Approve student
+        $response = $this->post(route('university.students.approve', $student));
+        $response->assertRedirect();
+        $this->assertEquals('active', $student->fresh()->status);
 
         // Edit form
         $response = $this->get(route('university.students.edit', $student));
@@ -551,6 +628,17 @@ class UniBridgeFlowsTest extends TestCase
             'status'         => 'approved',
         ]);
 
+        $pendingUniv = University::create([
+            'user_id'        => $univUser->id,
+            'name'           => 'Pending Univ Govt Test',
+            'address'        => 'Address',
+            'city'           => 'City',
+            'state'          => 'State',
+            'affiliation_no' => 'PEND-999',
+            'contact_phone'  => '9999999999',
+            'status'         => 'pending',
+        ]);
+
         Student::create([
             'university_id'  => $approvedUniv->id,
             'name'           => 'Charlie Brown',
@@ -569,6 +657,16 @@ class UniBridgeFlowsTest extends TestCase
         // Dashboard
         $response = $this->get(route('government.dashboard'));
         $response->assertStatus(200);
+
+        // Reject university
+        $response = $this->post(route('government.universities.reject', $pendingUniv), ['reason' => 'Invalid docs']);
+        $response->assertStatus(302);
+        $this->assertEquals('rejected', $pendingUniv->fresh()->status);
+
+        // Approve university
+        $response = $this->post(route('government.universities.approve', $pendingUniv));
+        $response->assertStatus(302);
+        $this->assertEquals('approved', $pendingUniv->fresh()->status);
 
         // View Student Open Data
         $response = $this->get(route('government.data', ['search' => 'Charlie', 'state' => 'Maharashtra']));

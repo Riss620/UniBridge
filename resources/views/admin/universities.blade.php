@@ -41,7 +41,6 @@
                 <th>Type</th>
                 <th>Status</th>
                 <th>Registered</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -57,28 +56,6 @@
                 <td><span class="badge badge-active" style="text-transform:capitalize">{{ $u->type }}</span></td>
                 <td><span class="badge badge-{{ $u->status }}">{{ ucfirst($u->status) }}</span></td>
                 <td style="font-size:12px;color:var(--text2)">{{ $u->created_at->format('d M Y') }}</td>
-                <td>
-                    @if($u->status === 'pending')
-                    <form action="{{ route('admin.universities.approve', $u) }}" method="POST" style="display:inline">
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-sm">✓ Approve</button>
-                    </form>
-                    <form action="{{ route('admin.universities.reject', $u) }}" method="POST" style="display:inline" onsubmit="return confirm('Reject this university?')">
-                        @csrf
-                        <button type="submit" class="btn btn-danger btn-sm">✗ Reject</button>
-                    </form>
-                    @elseif($u->status === 'approved')
-                    <form action="{{ route('admin.universities.reject', $u) }}" method="POST" style="display:inline" onsubmit="return confirm('Revoke approval?')">
-                        @csrf
-                        <button type="submit" class="btn btn-warning btn-sm">Revoke</button>
-                    </form>
-                    @elseif($u->status === 'rejected')
-                    <form action="{{ route('admin.universities.approve', $u) }}" method="POST" style="display:inline">
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-sm">Re-approve</button>
-                    </form>
-                    @endif
-                </td>
             </tr>
             @empty
             <tr><td colspan="8">

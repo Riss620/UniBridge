@@ -75,9 +75,30 @@ class GovernmentController extends Controller
         ]);
     }
 
-    public function universities()
+    public function universities(Request $request)
     {
-        $universities = University::where('status', 'approved')->with('user')->paginate(15);
-        return view('government.universities', compact('universities'));
+        $filter = $request->get('status', 'all');
+        $query = University::with('user')->latest();
+        if ($filter !== 'all') {
+            $query->where('status', $filter);
+        }
+        $universities = $query->paginate(15);
+        return view('government.universities', compact('universities', 'filter'));
+    }
+
+    public function approve(University $university)
+    {
+        $university->update(['status' => 'approved', 'rejection_reason' => null]);
+        return back()->with('success', "University '{$university->name}' has been approved.");
+    }
+
+    public function reject(Request $request, University $university)
+    {
+        $request->validate(['reason' => 'nullable|string|max:500']);
+        $university->update([
+            'status'           => 'rejected',
+            'rejection_reason' => $request->reason ?? 'Does not meet registration criteria.',
+        ]);
+        return back()->with('success', "University '{$university->name}' has been rejected.");
     }
 }

@@ -65,7 +65,7 @@ class UniversityController extends Controller
             'department'     => 'required|string|max:100',
             'year'           => 'required|integer|min:1|max:7',
             'cgpa'           => 'nullable|numeric|min:0|max:10',
-            'status'         => 'required|in:active,graduated,dropout',
+            'status'         => 'required|in:pending,active,graduated,dropout',
             'admission_year' => 'required|digits:4|integer',
             'passout_year'   => 'nullable|digits:4|integer',
             'gender'         => 'nullable|in:male,female,other',
@@ -98,7 +98,7 @@ class UniversityController extends Controller
             'department'     => 'required|string|max:100',
             'year'           => 'required|integer|min:1|max:7',
             'cgpa'           => 'nullable|numeric|min:0|max:10',
-            'status'         => 'required|in:active,graduated,dropout',
+            'status'         => 'required|in:pending,active,graduated,dropout',
             'admission_year' => 'required|digits:4|integer',
             'passout_year'   => 'nullable|digits:4|integer',
             'gender'         => 'nullable|in:male,female,other',
@@ -122,5 +122,16 @@ class UniversityController extends Controller
     {
         $university = auth()->user()->university;
         return view('university.profile', compact('university'));
+    }
+
+    public function approveStudent(Student $student)
+    {
+        $university = auth()->user()->university;
+        if (!$university || $university->status !== 'approved') abort(403);
+        if ($student->university_id !== $university->id) abort(403);
+
+        $student->update(['status' => 'active']);
+
+        return back()->with('success', "Student '{$student->name}' has been approved.");
     }
 }

@@ -40,10 +40,11 @@ Route::middleware('auth')->group(function () {
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard',              [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/universities',           [AdminController::class, 'universities'])->name('universities');
-    Route::post('/universities/{university}/approve', [AdminController::class, 'approve'])->name('universities.approve');
-    Route::post('/universities/{university}/reject',  [AdminController::class, 'reject'])->name('universities.reject');
     Route::get('/students',               [AdminController::class, 'students'])->name('students');
     Route::get('/users',                  [AdminController::class, 'users'])->name('users');
+    Route::get('/users/create',           [AdminController::class, 'createUserForm'])->name('users.create');
+    Route::post('/users',                 [AdminController::class, 'storeUser'])->name('users.store');
+    Route::delete('/users/{user}',        [AdminController::class, 'deleteUser'])->name('users.delete');
     Route::post('/users/{user}/toggle',   [AdminController::class, 'toggleUser'])->name('users.toggle');
 });
 
@@ -54,6 +55,7 @@ Route::prefix('university')->name('university.')->middleware(['auth', 'role:univ
     Route::get('/students/create',             [UniversityController::class, 'createStudent'])->name('students.create');
     Route::post('/students',                   [UniversityController::class, 'storeStudent'])->name('students.store');
     Route::get('/students/{student}/edit',     [UniversityController::class, 'editStudent'])->name('students.edit');
+    Route::post('/students/{student}/approve', [UniversityController::class, 'approveStudent'])->name('students.approve');
     Route::put('/students/{student}',          [UniversityController::class, 'updateStudent'])->name('students.update');
     Route::delete('/students/{student}',       [UniversityController::class, 'deleteStudent'])->name('students.delete');
     Route::get('/profile',                     [UniversityController::class, 'profile'])->name('profile');
@@ -65,6 +67,8 @@ Route::prefix('government')->name('government.')->middleware(['auth', 'role:gove
     Route::get('/data',          [GovernmentController::class, 'data'])->name('data');
     Route::get('/export',        [GovernmentController::class, 'export'])->name('export');
     Route::get('/universities',  [GovernmentController::class, 'universities'])->name('universities');
+    Route::post('/universities/{university}/approve', [GovernmentController::class, 'approve'])->name('universities.approve');
+    Route::post('/universities/{university}/reject',  [GovernmentController::class, 'reject'])->name('universities.reject');
 });
 
 // ─── Student ─────────────────────────────────────────────────────────────────

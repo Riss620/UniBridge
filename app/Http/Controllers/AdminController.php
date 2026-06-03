@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
@@ -36,21 +37,6 @@ class AdminController extends Controller
         return view('admin.universities', compact('universities', 'filter'));
     }
 
-    public function approve(University $university)
-    {
-        $university->update(['status' => 'approved', 'rejection_reason' => null]);
-        return back()->with('success', "University '{$university->name}' has been approved.");
-    }
-
-    public function reject(Request $request, University $university)
-    {
-        $request->validate(['reason' => 'nullable|string|max:500']);
-        $university->update([
-            'status'           => 'rejected',
-            'rejection_reason' => $request->reason ?? 'Does not meet registration criteria.',
-        ]);
-        return back()->with('success', "University '{$university->name}' has been rejected.");
-    }
 
     public function students(Request $request)
     {
@@ -78,5 +64,111 @@ class AdminController extends Controller
         $user->update(['is_active' => !$user->is_active]);
         $status = $user->is_active ? 'activated' : 'deactivated';
         return back()->with('success', "User has been {$status}.");
+    }
+
+    public function createUserForm()
+    {
+        $approvedUniversities = University::where('status', 'approved')->orderBy('name')->get();
+        return view('admin.create-user', compact('approvedUniversities'));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $role = $request->input('role');
+        $rules = [
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'role'     => 'required|in:admin,university,government,student',
+        ];
+
+        if ($role === 'university') {
+            $rules += [
+                'university_name'    => 'required|string|max:255',
+                'affiliation_no'     => 'required|string|unique:universities,affiliation_no',
+                'city'               => 'required|string|max:100',
+                'state'              => 'required|string|max:100',
+                'contact_phone'      => 'required|string|max:15',
+                'university_type'    => 'required|in:central,state,deemed,private',
+                'university_address' => 'required|string|max:500',
+            ];
+        } elseif ($role === 'government') {
+            $rules += [
+                'department'  => 'required|string|max:255',
+                'designation' => 'required|string|max:255',
+            ];
+        } elseif ($role === 'student') {
+            $rules += [
+                'university_id'  => 'required|exists:universities,id',
+                'roll_no'        => 'required|string|max:50|unique:students,roll_no',
+                'course'         => 'required|string|max:100',
+                'department'     => 'required|string|max:100',
+                'year'           => 'required|integer|min:1|max:7',
+                'admission_year' => 'required|digits:4|integer',
+                'gender'         => 'nullable|in:male,female,other',
+                'state_of_origin'=> 'nullable|string|max:100',
+            ];
+        }
+
+        $validated = $request->validate($rules);
+
+        $user = User::create([
+            'name'              => $validated['name'],
+            'email'             => $validated['email'],
+            'password'          => Hash::make($validated['password']),
+            'role'              => $role,
+            'email_verified_at' => now(),
+        ]);
+
+        if ($role === 'university') {
+            University::create([
+                'user_id'        => $user->id,
+                'name'           => $validated['university_name'],
+                'address'        => $validated['university_address'],
+                'city'           => $validated['city'],
+                'state'          => $validated['state'],
+                'affiliation_no' => $validated['affiliation_no'],
+                'contact_phone'  => $validated['contact_phone'],
+                'type'           => $validated['university_type'],
+                'status'         => 'approved', // Admin-created is approved immediately
+            ]);
+        } elseif ($role === 'government') {
+            GovernmentUser::create([
+                'user_id'     => $user->id,
+                'department'  => $validated['department'],
+                'designation' => $validated['designation'],
+            ]);
+        } elseif ($role === 'student') {
+            Student::create([
+                'university_id'  => $validated['university_id'],
+                'name'           => $validated['name'],
+                'roll_no'        => $validated['roll_no'],
+                'email'          => $validated['email'],
+                'course'         => $validated['course'],
+                'department'     => $validated['department'],
+                'year'           => $validated['year'],
+                'admission_year' => $validated['admission_year'],
+                'gender'         => $validated['gender'] ?? null,
+                'state_of_origin'=> $validated['state_of_origin'] ?? null,
+                'status'         => 'active', // Admin-created is active immediately
+            ]);
+        }
+
+        return redirect()->route('admin.users')->with('success', 'User created successfully.');
+    }
+
+    public function deleteUser(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot delete yourself.');
+        }
+
+        if ($user->role === 'student') {
+            Student::where('email', $user->email)->delete();
+        }
+
+        $user->delete();
+
+        return back()->with('success', 'User deleted successfully.');
     }
 }

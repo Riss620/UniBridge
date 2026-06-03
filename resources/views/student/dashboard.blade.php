@@ -9,7 +9,16 @@
 
 @section('content')
 <div style="max-width:600px">
-    @if($studentRecord)
+    @if($studentRecord && $studentRecord->status === 'pending')
+    <div class="glass-card" style="text-align:center;padding:60px 20px;margin-bottom:20px">
+        <div style="font-size:48px;margin-bottom:16px">⏳</div>
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:8px">Approval Pending</h2>
+        <p style="color:var(--text2);font-size:14px">
+            Your registration is pending approval by your university: <strong>{{ $studentRecord->university->name }}</strong>.<br>
+            Please wait for them to verify and approve your record.
+        </p>
+    </div>
+    @elseif($studentRecord)
     <div class="glass-card" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px">
             <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#f43f5e,#ec4899);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff">

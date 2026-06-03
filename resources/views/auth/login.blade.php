@@ -37,12 +37,4 @@
 <div class="auth-links">
     New to UniBridge? <a href="{{ route('register') }}">Create an account</a>
 </div>
-
-<div class="divider">Demo Credentials</div>
-<div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:10px;padding:12px;font-size:12px;color:#8b90a0;line-height:1.8;">
-    <strong style="color:#818cf8;">Admin:</strong> admin@unibridge.in / Admin@1234<br>
-    <strong style="color:#2dd4bf;">University:</strong> du@unibridge.in / Univ@1234<br>
-    <strong style="color:#fbbf24;">Government:</strong> govt@unibridge.in / Govt@1234<br>
-    <strong style="color:#fb7185;">Student:</strong> student1@du.ac.in / Student@1234
-</div>
 @endsection

@@ -55,7 +55,7 @@
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
     <h2 style="font-size:18px;font-weight:700;">Recent University Registrations</h2>
-    <a href="{{ route('admin.universities') }}?status=pending" class="btn btn-warning">View All Pending</a>
+    <a href="{{ route('admin.universities') }}" class="btn btn-primary">View All</a>
 </div>
 
 <div class="table-wrap">
@@ -82,18 +82,7 @@
                 <td>{{ $u->user->name }}</td>
                 <td><span class="badge badge-{{ $u->status }}">{{ ucfirst($u->status) }}</span></td>
                 <td>
-                    @if($u->status === 'pending')
-                    <form action="{{ route('admin.universities.approve', $u) }}" method="POST" style="display:inline">
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-sm">✓ Approve</button>
-                    </form>
-                    <form action="{{ route('admin.universities.reject', $u) }}" method="POST" style="display:inline" onsubmit="return confirm('Reject this university?')">
-                        @csrf
-                        <button type="submit" class="btn btn-danger btn-sm">✗ Reject</button>
-                    </form>
-                    @else
                     <span style="color:var(--text2);font-size:13px">—</span>
-                    @endif
                 </td>
             </tr>
             @empty

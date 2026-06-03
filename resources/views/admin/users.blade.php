@@ -10,6 +10,11 @@
 @endsection
 
 @section('content')
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div></div>
+    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">+ Create User</a>
+</div>
+
 <div class="table-wrap">
     <table>
         <thead>
@@ -26,12 +31,21 @@
                 <td style="font-size:12px;color:var(--text2)">{{ $u->created_at->format('d M Y') }}</td>
                 <td>
                     @if($u->id !== auth()->id())
-                    <form action="{{ route('admin.users.toggle', $u) }}" method="POST" style="display:inline">
-                        @csrf
-                        <button type="submit" class="btn btn-sm {{ $u->is_active ? 'btn-danger' : 'btn-success' }}">
-                            {{ $u->is_active ? 'Deactivate' : 'Activate' }}
-                        </button>
-                    </form>
+                    <div style="display:flex;gap:4px;">
+                        <form action="{{ route('admin.users.toggle', $u) }}" method="POST" style="display:inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm {{ $u->is_active ? 'btn-danger' : 'btn-success' }}">
+                                {{ $u->is_active ? 'Deactivate' : 'Activate' }}
+                            </button>
+                        </form>
+                        <form action="{{ route('admin.users.delete', $u) }}" method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this user?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-danger" style="background:#ef4444;border-color:#ef4444;color:#fff;">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
                     @else
                     <span style="color:var(--text2);font-size:12px">You</span>
                     @endif

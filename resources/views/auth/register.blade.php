@@ -5,23 +5,25 @@
     .auth-card { max-width:520px; }
 
     /* Role Selector */
-    .role-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+    .role-selector { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:16px; }
     .role-card-btn {
         display:flex; flex-direction:column; align-items:center; gap:5px;
-        padding:12px 8px;
+        padding:10px 4px;
         border:2px solid rgba(255,255,255,.08);
         border-radius:12px; cursor:pointer;
         transition:all .2s;
-        font-size:11px; font-weight:700;
-        text-transform:uppercase; letter-spacing:.5px;
+        font-size:10px; font-weight:700;
+        text-transform:uppercase; letter-spacing:.3px;
         color:#8b90a0; background:rgba(255,255,255,.03);
         user-select:none; width:100%;
+        border-style: solid;
     }
-    .role-card-btn span.emoji { font-size:22px; }
+    .role-card-btn span.emoji { font-size:20px; }
     .role-card-btn:hover { border-color:rgba(255,255,255,.2); color:#e8eaf0; background:rgba(255,255,255,.06); }
     .role-card-btn.active-university { border-color:#14b8a6; background:rgba(20,184,166,.12); color:#14b8a6; }
     .role-card-btn.active-government { border-color:#f59e0b; background:rgba(245,158,11,.12); color:#f59e0b; }
     .role-card-btn.active-student    { border-color:#f43f5e; background:rgba(244,63,94,.12);  color:#f43f5e; }
+    .role-card-btn.active-admin      { border-color:#818cf8; background:rgba(129,140,248,.12); color:#818cf8; }
 
     /* Extra fields hidden by default via inline style — JS adds .show */
     .extra-fields { display:none; }
@@ -62,14 +64,17 @@
 
     {{-- Role Selector --}}
     <div class="role-selector">
+        <button type="button" id="btn-student" class="role-card-btn" onclick="switchRole('student')">
+            <span class="emoji">🎓</span> Student
+        </button>
         <button type="button" id="btn-university" class="role-card-btn" onclick="switchRole('university')">
             <span class="emoji">🏛️</span> University
         </button>
         <button type="button" id="btn-government" class="role-card-btn" onclick="switchRole('government')">
             <span class="emoji">🏛</span> Government
         </button>
-        <button type="button" id="btn-student" class="role-card-btn" onclick="switchRole('student')">
-            <span class="emoji">🎓</span> Student
+        <button type="button" id="btn-admin" class="role-card-btn" onclick="switchRole('admin')">
+            <span class="emoji">👑</span> Admin
         </button>
     </div>
 
@@ -160,7 +165,66 @@
         </div>
     </div>
 
-    {{-- ── Student has NO extra fields — just base fields above ── --}}
+    {{-- ── Student Extra Fields ────────────────────────── --}}
+    <div class="extra-fields" id="student-fields" style="display:none">
+        <div class="section-header">🎓 Academic Details</div>
+        <div class="form-group">
+            <label class="form-label">Select University</label>
+            <select name="university_id" class="form-control">
+                <option value="">Select your university</option>
+                @foreach($approvedUniversities as $univ)
+                    <option value="{{ $univ->id }}" {{ old('university_id') == $univ->id ? 'selected' : '' }}>{{ $univ->name }}</option>
+                @endforeach
+            </select>
+            @error('university_id')<div class="form-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Roll Number</label>
+                <input type="text" name="roll_no" class="form-control" value="{{ old('roll_no') }}" placeholder="Roll No / Enroll No">
+                @error('roll_no')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+            <div class="form-group">
+                <label class="form-label">Course</label>
+                <input type="text" name="course" class="form-control" value="{{ old('course') }}" placeholder="e.g. B.Tech / B.Sc / MBA">
+                @error('course')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <input type="text" name="department" class="form-control" value="{{ old('department') }}" placeholder="e.g. Computer Science">
+                @error('department')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+            <div class="form-group">
+                <label class="form-label">Current Year</label>
+                <input type="number" name="year" class="form-control" value="{{ old('year') }}" placeholder="e.g. 1, 2, 3" min="1" max="7">
+                @error('year')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Admission Year</label>
+                <input type="number" name="admission_year" class="form-control" value="{{ old('admission_year') }}" placeholder="e.g. 2024">
+                @error('admission_year')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select name="gender" class="form-control">
+                    <option value="">Select gender</option>
+                    <option value="male" {{ old('gender') === 'male' ? 'selected' : '' }}>Male</option>
+                    <option value="female" {{ old('gender') === 'female' ? 'selected' : '' }}>Female</option>
+                    <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
+                </select>
+                @error('gender')<div class="form-error">{{ $message }}</div>@enderror
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">State of Origin</label>
+            <input type="text" name="state_of_origin" class="form-control" value="{{ old('state_of_origin') }}" placeholder="e.g. Delhi">
+            @error('state_of_origin')<div class="form-error">{{ $message }}</div>@enderror
+        </div>
+    </div>
 
     <button type="submit" class="btn-submit" style="margin-top:14px">Create Account →</button>
 </form>
@@ -181,7 +245,7 @@ function switchRole(role) {
     document.getElementById('role-input').value = role;
 
     // 2. Reset all buttons
-    ['university', 'government', 'student'].forEach(function(r) {
+    ['admin', 'university', 'government', 'student'].forEach(function(r) {
         document.getElementById('btn-' + r).className = 'role-card-btn';
     });
 

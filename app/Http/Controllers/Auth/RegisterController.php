@@ -18,7 +18,8 @@ class RegisterController extends Controller
     public function showForm(Request $request)
     {
         $role = $request->query('role', 'student');
-        return view('auth.register', compact('role'));
+        $approvedUniversities = University::where('status', 'approved')->orderBy('name')->get();
+        return view('auth.register', compact('role', 'approvedUniversities'));
     }
 
     public function register(Request $request)
@@ -29,7 +30,7 @@ class RegisterController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role'     => 'required|in:university,government,student',
+            'role'     => 'required|in:admin,university,government,student',
         ];
 
         if ($role === 'university') {
@@ -46,6 +47,17 @@ class RegisterController extends Controller
             $rules += [
                 'department'   => 'required|string|max:255',
                 'designation'  => 'required|string|max:255',
+            ];
+        } elseif ($role === 'student') {
+            $rules += [
+                'university_id'  => 'required|exists:universities,id',
+                'roll_no'        => 'required|string|max:50|unique:students,roll_no',
+                'course'         => 'required|string|max:100',
+                'department'     => 'required|string|max:100',
+                'year'           => 'required|integer|min:1|max:7',
+                'admission_year' => 'required|digits:4|integer',
+                'gender'         => 'nullable|in:male,female,other',
+                'state_of_origin'=> 'nullable|string|max:100',
             ];
         }
 
@@ -79,6 +91,20 @@ class RegisterController extends Controller
                 'user_id'     => $user->id,
                 'department'  => $validated['department'],
                 'designation' => $validated['designation'],
+            ]);
+        } elseif ($role === 'student') {
+            \App\Models\Student::create([
+                'university_id'  => $validated['university_id'],
+                'name'           => $validated['name'],
+                'roll_no'        => $validated['roll_no'],
+                'email'          => $validated['email'],
+                'course'         => $validated['course'],
+                'department'     => $validated['department'],
+                'year'           => $validated['year'],
+                'admission_year' => $validated['admission_year'],
+                'gender'         => $validated['gender'] ?? null,
+                'state_of_origin'=> $validated['state_of_origin'] ?? null,
+                'status'         => 'pending',
             ]);
         }
 

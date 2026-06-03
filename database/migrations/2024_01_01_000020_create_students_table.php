@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('department');
             $table->unsignedTinyInteger('year');
             $table->decimal('cgpa', 4, 2)->nullable();
-            $table->enum('status', ['active', 'graduated', 'dropout'])->default('active');
+            $table->enum('status', ['pending', 'active', 'graduated', 'dropout'])->default('pending');
             $table->year('admission_year');
             $table->year('passout_year')->nullable();
             $table->string('gender')->nullable();

@@ -39,7 +39,13 @@
                 <td>Year {{ $s->year }}</td>
                 <td>{{ $s->cgpa ?? '—' }}</td>
                 <td><span class="badge badge-{{ $s->status }}">{{ ucfirst($s->status) }}</span></td>
-                <td style="display:flex;gap:6px">
+                <td style="display:flex;gap:6px;align-items:center;">
+                    @if($s->status === 'pending')
+                    <form action="{{ route('university.students.approve', $s) }}" method="POST" style="display:inline">
+                        @csrf
+                        <button type="submit" class="btn btn-success btn-sm">✓ Approve</button>
+                    </form>
+                    @endif
                     <a href="{{ route('university.students.edit', $s) }}" class="btn btn-warning btn-sm">✏ Edit</a>
                     <form action="{{ route('university.students.delete', $s) }}" method="POST" onsubmit="return confirm('Delete this student?')">
                         @csrf @method('DELETE')
